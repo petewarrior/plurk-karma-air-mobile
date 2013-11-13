@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:debugger="com.demonsters.debugger.*" 
+		creationComplete="init()"
+		title="Plurk Karma Monitor">
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+
+			import flash.data.EncryptedLocalStore;
+			import flash.display.Loader;
+			import flash.events.ProgressEvent;
+			import flash.net.URLRequest;
+			import flash.utils.ByteArray;
+		
+			import adobe.utils.ProductManager;
+			import com.serialization.json.JSON;
+			import com.harsanalif.plurkbridge.PlurkBridge;
+			
+			import mx.logging.ILogger;
+            import mx.logging.Log;
+			
+			
+			
+			private var pb:PlurkBridge;
+			
+			protected function init():void
+			{
+				trace("init");
+				
+				// Monster Debugger trace message
+                monsterDebugger.trace(this, "Hello World!");
+                
+                // Flex trace message
+                var logger:ILogger = Log.getLogger("Main.mxml");
+                logger.error("Hello World!");
+				
+				pb = new PlurkBridge();
+				
+				getKarma();
+				
+				
+			}
+			
+			
+			
+			private function getKarma():void {
+				pb.load("/API/Users/getKarmaStats", 
+					{ 
+						"api_key": "YirPS3znh68FdqHSBWC2BPJ6XT4srRCb"
+					},
+					
+					function(data:Object):void {
+						if (data.current_karma) {
+							currentKarmaBox.text = "Your current karma is: " + data.current_karma;
+							var lnk:ByteArray = new ByteArray();
+							lnk.writeFloat(new Number(data.current_karma as String));
+							EncryptedLocalStore.setItem("last_known_karma", lnk);
+							getKarmaGraph(data.karma_graph);
+						} else {
+							monsterDebugger.trace(this, data);
+						}
+					},
+					true
+					);
+			}
+			
+			private function getKarmaGraph(url:String):void {
+				karmaGraph.source = url;
+				currentKarmaBox.appendText("\n" + url);
+				
+			}
+			
+			private function logout():void {
+				pb.load("/API/Users/getKarmaStats", 
+					{ 
+						"api_key": "YirPS3znh68FdqHSBWC2BPJ6XT4srRCb"
+					},
+					
+					function(data:Object):void {
+						
+							monsterDebugger.trace(this, data);
+						
+					},
+					true
+					);
+				
+				EncryptedLocalStore.removeItem("username");
+				EncryptedLocalStore.removeItem("password");
+				navigator.pushView(views.LoginView);
+			}
+		]]>
+	</fx:Script>
+	<s:states>
+        <!-- Define the new view states. -->
+       
+    </s:states>    
+	<!-- new to AIR? please read *carefully* the readme.txt files! -->
+	
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" paddingTop="10" paddingLeft="15" paddingRight="15" />
+	</s:layout>
+	
+	<s:Image id="karmaGraph" scaleMode="letterbox" width="100%" />
+	<s:TextArea id="currentKarmaBox" text="" width="100%" />
+	<s:Button id="logoutButton" label="Logout" click="logout();" />
+	
+	<debugger:MonsterDebuggerFlex id="monsterDebugger"/>
+	
+</s:View>

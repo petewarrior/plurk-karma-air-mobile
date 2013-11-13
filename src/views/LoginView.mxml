@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:View xmlns:fx="http://ns.adobe.com/mxml/2009"
+		xmlns:s="library://ns.adobe.com/flex/spark"
+		xmlns:debugger="com.demonsters.debugger.*" 
+		creationComplete="init()"
+		title="Plurk Karma Monitor">
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+
+	<fx:Script>
+		<![CDATA[
+			import flash.data.EncryptedLocalStore;
+			import flash.utils.ByteArray;
+		
+			import adobe.utils.ProductManager;
+			import com.serialization.json.JSON;
+			import com.harsanalif.plurkbridge.PlurkBridge;
+			
+			import com.adobe.protocols.oauth2.*;
+			import com.adobe.protocols.oauth2.event.*;
+			
+			import mx.logging.ILogger;
+            import mx.logging.Log;
+			
+			private var pb:PlurkBridge;
+			
+			private var username:String;
+			private var password:String;
+			
+			protected function init():void
+			{
+				trace("init");
+				
+				// Monster Debugger trace message
+                monsterDebugger.trace(this, "Hello World!");
+                
+                // Flex trace message
+                var logger:ILogger = Log.getLogger("Main.mxml");
+                logger.error("Hello World!");
+				
+				pb = new PlurkBridge();
+				
+				if (EncryptedLocalStore.getItem("username") != null && EncryptedLocalStore.getItem("password") != null) {
+					username = EncryptedLocalStore.getItem("username").readUTF();
+					usernameBox.text = username;
+					
+					password = EncryptedLocalStore.getItem("password").readUTF();
+					passwordBox.text = password;
+					
+					
+					messageBox.text = "Logging you in...";
+					
+					login(username, password);
+				}
+				
+			}
+			
+			private function login(_username:String, _password:String):void {
+				
+					this.username = _username;
+					this.password = _password;
+					usernameBox.enabled = false;
+					passwordBox.enabled = false;
+					
+					pb.load("/API/Users/login", 
+						{ 
+							"api_key": "YirPS3znh68FdqHSBWC2BPJ6XT4srRCb",
+							"username": username,
+							"password": password,
+							"no_data": "1"
+						},
+						
+						function(data:Object):void {
+							if (data.success_text) {
+								monsterDebugger.trace(this, "Login successful");
+								
+								saveLogin();
+								navigator.pushView(views.HomeView);
+							} else {
+								messageBox.text = "Login failed";
+								usernameBox.enabled = true;
+								passwordBox.enabled = true;
+							}
+						},
+						true);
+				}
+				
+				private function saveLogin():void {
+					var temp:ByteArray = new ByteArray();
+								temp.writeUTF(this.username);
+								EncryptedLocalStore.setItem("username", temp);
+								temp.clear();
+								temp.writeUTF(this.password);
+								EncryptedLocalStore.setItem("password", temp);
+				}
+			
+				
+		
+			
+			
+			
+			
+		]]>
+	</fx:Script>
+	<s:states>
+        <!-- Define the new view states. -->
+       
+    </s:states>    
+	<!-- new to AIR? please read *carefully* the readme.txt files! -->
+	<s:layout>
+		<s:VerticalLayout />
+	</s:layout>
+	
+	<s:Form id="loginForm" defaultButton="{submitButton}">
+		<s:FormItem label="Username">
+			<s:TextInput id="usernameBox" />
+		</s:FormItem>
+		
+		<s:FormItem label="Password">
+			<s:TextInput id="passwordBox" displayAsPassword="true" />
+		</s:FormItem>
+		
+		<s:FormItem>
+            <s:Button label="Login" id="submitButton" 
+                click="login(usernameBox.text, passwordBox.text);"/>
+        </s:FormItem>
+	</s:Form>
+	
+	<s:Label width="100%" id="messageBox" />
+	
+	
+	<debugger:MonsterDebuggerFlex id="monsterDebugger"/>
+	
+</s:View>
